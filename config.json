@@ -1,0 +1,12 @@
+{
+  "channel_secret": "9ac66499c27c3997bdc81952ca2055d6",
+  "channel_access_token": "6c35f9b17ce9c11e50ee7b13287b6321",
+  "bot_name": "shawn的狗",
+  "admins": ["U96c28925f2e527e256298ae4d6819e8c"],
+  "group_protection": {
+    "anti_kick": true,
+    "anti_invite": true,
+    "anti_link": true,
+    "group_name_protect": true
+  }
+}
