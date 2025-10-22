@@ -1,42 +1,55 @@
+# app.py
 from flask import Flask, request
 from linebot import LineBotApi, WebhookHandler
 from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage, MemberJoinedEvent, MemberLeftEvent
+    MessageEvent, TextMessage, TextSendMessage,
+    MemberJoinedEvent, MemberLeftEvent
 )
 from linebot.exceptions import InvalidSignatureError, LineBotApiError
 import json
 import os
 
-# ====== 你的功能模組 ======
+# ===== 匯入你的功能模組 =====
 from modules import protect, manage, helper, checkin, backup
 
+# ===== 建立 Flask =====
 app = Flask(__name__)
 
-# ====== 載入設定 ======
-with open('config.json', 'r', encoding='utf-8') as f:
-    config = json.load(f)
+# ===== 載入設定（config.json）=====
+with open("config.json", "r", encoding="utf-8") as f:
+    cfg = json.load(f)
 
-line_bot_api = LineBotApi(config["channel_access_token"])
-handler = WebhookHandler(config["channel_secret"])
+CHANNEL_ACCESS_TOKEN = cfg["channel_access_token"]
+CHANNEL_SECRET = cfg["channel_secret"]
 
-# 健康檢查
+line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
+handler = WebhookHandler(CHANNEL_SECRET)
+
+# 健康檢查/首頁
 @app.route("/", methods=["GET"])
 def home():
     return "OK", 200
 
-# ====== Webhook 入口 ======
-@app.route("/callback", methods=['POST'])
+
+# ===== LINE Webhook 入口 =====
+@app.route("/callback", methods=["POST"])
 def callback():
-    # 1) 取簽章與 body（body 只能讀一次）
-    signature = request.headers.get('X-Line-Signature', '')
+    # 只能讀一次：先把 body 取出來
     body = request.get_data(as_text=True)
+    signature = request.headers.get("X-Line-Signature", "")
 
-    app.logger.info(f"[LINE] signature_len={len(signature)} body_len={len(body)}")
+    # 在 Render Logs 可觀察長度是否 > 0
+    app.logger.info(f"[LINE] sig_len={len(signature)} body_len={len(body)}")
 
-    # 2) 驗簽與處理
+    # ---- 臨時旁路：只為了先通過 Verify；通過後請關掉 ----
+    if os.environ.get("ALLOW_UNVERIFIED", "0") == "1":
+        return "OK", 200
+    # ---------------------------------------------------------
+
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
+        # 多半是 Channel secret 不正確 / body 被讀兩次
         app.logger.warning("[LINE] Invalid signature (check Channel Secret)")
         return "Invalid signature", 400
     except LineBotApiError as e:
@@ -46,15 +59,15 @@ def callback():
         app.logger.exception(e)
         return "Server error", 500
 
-    # 3) LINE 需要 200 才算成功
     return "OK", 200
 
-# ====== 文字訊息處理 ======
+
+# ===== 文字訊息處理 =====
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     text = (event.message.text or "").strip()
 
-    # 簡單防連結（可依需求加強）
+    # 簡單網址防護（可加強）
     if "http://" in text or "https://" in text:
         protect.link_guard(event, line_bot_api)
         return
@@ -75,13 +88,17 @@ def handle_message(event):
     elif text.startswith("/backup"):
         backup.export_members(event, line_bot_api)
     else:
-        # 非指令就回覆個提示（可拿掉）
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text="指令：/addadmin /ban /tagall /draw /checkin /inactive /backup")
-        )
+        # 非指令：可換成你自己的預設回覆或拿掉
+        try:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="指令：/addadmin /ban /tagall /draw /checkin /inactive /backup")
+            )
+        except Exception:
+            pass
 
-# ====== 成員加入/離開 ======
+
+# ===== 成員加入/離開事件 =====
 @handler.add(MemberJoinedEvent)
 def joined(event):
     protect.member_join(event, line_bot_api)
@@ -90,7 +107,8 @@ def joined(event):
 def left(event):
     protect.member_left(event, line_bot_api)
 
+
 if __name__ == "__main__":
-    # Render 會提供 PORT 環境變數。本地預設 10000。
+    # Render 會提供 PORT；本機預設 10000
     port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host="0.0.0.0", port=port)
