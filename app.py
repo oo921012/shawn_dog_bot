@@ -1,4 +1,4 @@
-# app.py (production-stable)
+# app.py (production-stable, aligned with new manage.py)
 from flask import Flask, request
 from linebot import LineBotApi, WebhookHandler
 from linebot.models import (
@@ -30,8 +30,7 @@ def home():
 # ===== Webhook 入口 =====
 @app.route("/callback", methods=["POST"])
 def callback():
-    # 只能讀一次
-    body = request.get_data(as_text=True)
+    body = request.get_data(as_text=True)                    # 只能讀一次
     signature = request.headers.get("X-Line-Signature", "")
 
     # 方便除錯：長度要 > 0
@@ -61,11 +60,21 @@ def handle_message(event):
         protect.link_guard(event, line_bot_api)
         return
 
-    # 指令
+    # 指令路由（管理員 / 黑名單）
     if text.startswith("/addadmin"):
-        manage.add_admin(event, line_bot_api)
+        manage.add_admin_cmd(event, line_bot_api)
+    elif text.startswith("/deladmin"):
+        manage.del_admin_cmd(event, line_bot_api)
+    elif text.startswith("/listadmin"):
+        manage.list_admins(event, line_bot_api)
     elif text.startswith("/ban"):
         manage.add_blacklist(event, line_bot_api)
+    elif text.startswith("/unban"):
+        manage.remove_blacklist(event, line_bot_api)
+    elif text.startswith("/listban"):
+        manage.list_blacklist(event, line_bot_api)
+
+    # 其他助手功能
     elif text.startswith("/tagall"):
         helper.tag_all(event, line_bot_api)
     elif text.startswith("/draw"):
@@ -81,7 +90,14 @@ def handle_message(event):
         try:
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text="指令：/addadmin /ban /tagall /draw /checkin /inactive /backup")
+                TextSendMessage(
+                    text=(
+                        "指令：\n"
+                        "/addadmin /deladmin /listadmin\n"
+                        "/ban /unban /listban\n"
+                        "/tagall /draw /checkin /inactive /backup"
+                    )
+                )
             )
         except Exception:
             pass
@@ -96,5 +112,5 @@ def left(event):
     protect.member_left(event, line_bot_api)
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.environ.get("PORT", 10000))  # Render 會注入 PORT；本機預設 10000
     app.run(host="0.0.0.0", port=port)
