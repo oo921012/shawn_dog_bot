@@ -1,4 +1,4 @@
-# app.py
+# app.py (production-stable)
 from flask import Flask, request
 from linebot import LineBotApi, WebhookHandler
 from linebot.models import (
@@ -6,51 +6,41 @@ from linebot.models import (
     MemberJoinedEvent, MemberLeftEvent
 )
 from linebot.exceptions import InvalidSignatureError, LineBotApiError
-import json
-import os
+import json, os
 
 # ===== 匯入你的功能模組 =====
 from modules import protect, manage, helper, checkin, backup
 
-# ===== 建立 Flask =====
 app = Flask(__name__)
 
-# ===== 載入設定（config.json）=====
+# ===== 載入設定 =====
 with open("config.json", "r", encoding="utf-8") as f:
     cfg = json.load(f)
-
 CHANNEL_ACCESS_TOKEN = cfg["channel_access_token"]
 CHANNEL_SECRET = cfg["channel_secret"]
 
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
-# 健康檢查/首頁
+# 健康檢查
 @app.route("/", methods=["GET"])
 def home():
     return "OK", 200
 
-
-# ===== LINE Webhook 入口 =====
+# ===== Webhook 入口 =====
 @app.route("/callback", methods=["POST"])
 def callback():
-    # 只能讀一次：先把 body 取出來
+    # 只能讀一次
     body = request.get_data(as_text=True)
     signature = request.headers.get("X-Line-Signature", "")
 
-    # 在 Render Logs 可觀察長度是否 > 0
+    # 方便除錯：長度要 > 0
     app.logger.info(f"[LINE] sig_len={len(signature)} body_len={len(body)}")
-
-    # ---- 臨時旁路：只為了先通過 Verify；通過後請關掉 ----
-    if os.environ.get("ALLOW_UNVERIFIED", "0") == "1":
-        return "OK", 200
-    # ---------------------------------------------------------
 
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
-        # 多半是 Channel secret 不正確 / body 被讀兩次
-        app.logger.warning("[LINE] Invalid signature (check Channel Secret)")
+        app.logger.warning("[LINE] Invalid signature — 請檢查 Channel secret")
         return "Invalid signature", 400
     except LineBotApiError as e:
         app.logger.exception(e)
@@ -61,18 +51,17 @@ def callback():
 
     return "OK", 200
 
-
 # ===== 文字訊息處理 =====
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     text = (event.message.text or "").strip()
 
-    # 簡單網址防護（可加強）
+    # 基礎網址防護
     if "http://" in text or "https://" in text:
         protect.link_guard(event, line_bot_api)
         return
 
-    # 指令處理
+    # 指令
     if text.startswith("/addadmin"):
         manage.add_admin(event, line_bot_api)
     elif text.startswith("/ban"):
@@ -88,7 +77,7 @@ def handle_message(event):
     elif text.startswith("/backup"):
         backup.export_members(event, line_bot_api)
     else:
-        # 非指令：可換成你自己的預設回覆或拿掉
+        # 非指令的預設回覆（可自行移除）
         try:
             line_bot_api.reply_message(
                 event.reply_token,
@@ -97,8 +86,7 @@ def handle_message(event):
         except Exception:
             pass
 
-
-# ===== 成員加入/離開事件 =====
+# ===== 成員加入/離開 =====
 @handler.add(MemberJoinedEvent)
 def joined(event):
     protect.member_join(event, line_bot_api)
@@ -107,8 +95,6 @@ def joined(event):
 def left(event):
     protect.member_left(event, line_bot_api)
 
-
 if __name__ == "__main__":
-    # Render 會提供 PORT；本機預設 10000
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
