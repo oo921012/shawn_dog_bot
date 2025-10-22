@@ -6,7 +6,11 @@ from linebot.models import (
 )
 import json
 import os
-from modules import protect, manage, helper, checkin, backup
+from modules.protect import *
+from modules.manage import *
+from modules.helper import *
+from modules.checkin import *
+from modules.backup import *
 
 app = Flask(__name__)
 
@@ -64,4 +68,5 @@ def left(event):
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
     
+
 
