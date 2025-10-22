@@ -1,6 +1,6 @@
 {
-  "channel_secret": "6c35f9b17ce9c11e50ee7b13287b6321",
-  "channel_access_token": "98bbe41b32e71074e2f5b3644121dad9",
+  "channel_secret": "98bbe41b32e71074e2f5b3644121dad9",
+  "channel_access_token": "Q6SpCrFS1snHKVwiWZ2jfJHchYo47+SQbo4Bd4Q/PSOC9MhMH1uicOCmkMB0T9OknAkvcRRfgSkV7ygXOdcbr6 SgSwLR3IuCM8LUeMmUapm7moCd5hVaHhFcTMNT3WlA5k/GZmON4VkTAoI87HqjGgdB04t89/1O/w1cDnyilFU=",
   "bot_name": "shawn的狗",
   "admins": ["U96c28925f2e527e256298ae4d6819e8c"],
   "group_protection": {
@@ -10,4 +10,5 @@
     "group_name_protect": true
   }
 }
+
 
