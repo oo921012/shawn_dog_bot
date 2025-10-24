@@ -1,4 +1,4 @@
-# 🐾 shawn的狗 LINE 防翻群機器人
+# 🐾 小米 LINE 防翻群機器人
 
 這是一個使用 **Python + Flask + LINE Messaging API SDK** 製作的群組管理機器人。
 
@@ -15,3 +15,4 @@
 3️⃣ 上傳此專案資料夾（解壓 ZIP）  
 4️⃣ Runtime 選 **Python 3**  
 5️⃣ Start Command:
+
