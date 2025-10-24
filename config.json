@@ -1,7 +1,7 @@
 {
   "channel_secret": "98bbe41b32e71074e2f5b3644121dad9",
   "channel_access_token": "Q6SpCrFS1snHKVwiWZ2jfJHchYo47+SQbo4Bd4Q/PSOC9MhMH1uicOCmkMB0T9OknAkvcRRfgSkV7ygXOdcbr6SgSwLR3IuCM8LUeMmUapm7moCd5hVaHhFcTMNT3WlA5k/GZmON4VkTAoI87HqjGgdB04t89/1O/w1cDnyilFU=",
-  "bot_name": "shawn的狗",
+  "bot_name": "小米",
   "admins": ["U96c28925f2e527e256298ae4d6819e8c"],
   "blacklist": [],
   "group_protection": {
@@ -11,3 +11,4 @@
     "group_name_protect": true
   }
 }
+
